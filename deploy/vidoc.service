@@ -1,0 +1,21 @@
+[Unit]
+Description=Vidoc Note backend
+Wants=network-online.target
+After=network-online.target mysql.service
+
+[Service]
+Type=simple
+User=vidoc
+Group=vidoc
+WorkingDirectory=/opt/vidoc
+EnvironmentFile=/opt/vidoc/vidoc.env
+# 8 核 8G 上并发 40 配 2048m。并发高时堆要一起涨，别只调 VIDOC_SUMMARY_CONCURRENCY；
+# 本机 swap=0，堆别往 3g 顶 —— 真吃满就是 OOM killer 直接开杀
+ExecStart=/usr/bin/java -Xms256m -Xmx2048m -jar /opt/vidoc/vidoc-server.jar
+Restart=always
+RestartSec=5
+SuccessExitStatus=143
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target

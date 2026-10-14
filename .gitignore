@@ -1,0 +1,69 @@
+# --- 依赖与构建产物 ---
+node_modules/
+dist/
+.nuxt/
+.output/
+.nitro/
+.cache/
+coverage/
+
+# --- Java / Maven / Spring Boot ---
+target/
+*.class
+*.jar
+!.mvn/wrapper/maven-wrapper.jar
+*.log
+/test/
+
+# --- 环境变量（敏感配置，不入库）---
+.env
+.env.*
+!.env.example
+# 部署时要手写的凭据文件：本地叫 .env.deploy、服务器上叫 vidoc.env，支付宝私钥常被落成单独文件。
+# 这一组一旦提交，值就永久留在历史里，删文件也没用。
+*.env
+vidoc.env
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+.claude/settings.local.json
+
+# --- 本地数据 / 数据库 ---
+data/
+*.db
+*.sqlite
+*.h2.db
+*.mv.db
+
+# --- IDE / 编辑器 ---
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+
+# --- 操作系统 ---
+.DS_Store
+Thumbs.db
+
+# --- 日志 / 临时 ---
+logs/
+*.tmp
+*.bak
+*.txt
+
+# --- 部署手册 ---
+# 本身不含密钥，但写明了内部架构（只能单实例、8080 未收口就全网裸奔、notify 是匿名端点、
+# /var/www/vidoc 与 /opt/vidoc 的具体路径）—— 仓库一旦公开，它等于一张「哪里没设防」的地图。
+# 想让它进版本库，删掉下面这行即可。
+deploy/DEPLOY.md
+
+# --- AI 协作与个人工作文件（非项目核心，不入库）---
+.claude/
+.agents/
+.codex/
+CLAUDE.md
+MEMORY.md
+HANDOFF.md

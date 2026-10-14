@@ -1,0 +1,4 @@
+# 部署脚本要在 Linux 上执行：必须保持 LF。
+# Windows 的 core.autocrlf=true 会在检出时把它变成 CRLF，scp 到服务器后 bash 直接报
+# /bin/bash^M: bad interpreter —— 这类故障在本地完全看不出来。
+*.sh text eol=lf
