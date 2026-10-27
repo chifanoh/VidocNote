@@ -26,7 +26,7 @@ npm run build               # 构建
 npm run generate            # 静态生成并执行 SPA fallback 脚本
 ```
 
-初始化：后端本地配置写 `springboot-server/src/main/resources/application-local.yml`（已 gitignore）；前端复制 `nuxt-web/.env.example` 为 `.env` 并填写。包含真实密钥的文件绝不能提交。
+初始化：后端本地配置写 `springboot-server/src/main/resources/application-local.yml`（已 gitignore）。包含真实密钥的文件绝不能提交。
 
 ## 架构与约束
 
@@ -48,7 +48,7 @@ npm run generate            # 静态生成并执行 SPA fallback 脚本
 
 ## 环境变量
 
-后端本地配置见 `springboot-server/src/main/resources/application-local.yml`，前端环境变量清单见 `nuxt-web/.env.example`。修改配置逻辑时同步更新对应说明。数据库、LLM、支付宝等真实凭据只放本地忽略文件或部署平台环境变量，不要写入 `application.yml`、代码或文档。
+后端本地配置见 `springboot-server/src/main/resources/application-local.yml`，前端站点/API 地址直接写在 `nuxt-web/nuxt.config.ts`。修改配置逻辑时同步更新对应说明。数据库、LLM、支付宝等真实凭据只放本地忽略文件或部署平台环境变量，不要写入 `application.yml`、代码或文档。
 
 ## 工作流说明
 

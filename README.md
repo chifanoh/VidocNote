@@ -34,7 +34,6 @@
 ```bash
 cd nuxt-web
 npm install
-cp .env.example .env   # 配置 API 地址
 npm run dev
 ```
 
@@ -42,22 +41,16 @@ npm run dev
 
 ```bash
 cd springboot-server
-cp .env.example .env   # 配置数据库、LLM Key 等环境变量
 ./mvnw spring-boot:run
 ```
 
 后端默认端口 `8080`，需本地 MySQL 及可用的 `yt-dlp` 命令。
 
-## 环境变量
+## 配置
 
-后端通过 `springboot-server/.env`（已 gitignore）或系统环境变量配置，主要包括：
+后端本地配置统一写在 `springboot-server/src/main/resources/application-local.yml`（已 gitignore），包括数据库、LLM、yt-dlp、摘要并发、支付宝与 Turnstile 等配置。
 
-- `VIDOC_DB_URL` / `VIDOC_DB_USERNAME` / `VIDOC_DB_PASSWORD`：数据库连接
-- LLM API 地址与密钥（OpenAI 兼容接口）
-- `VIDOC_YTDLP_PATH`：yt-dlp 可执行文件路径（默认 `yt-dlp`）
-- `VIDOC_SUMMARY_CONCURRENCY`：摘要任务并发上限（默认 8）
-
-详见 `springboot-server/src/main/resources/application.yml`。
+基础默认值见 `springboot-server/src/main/resources/application.yml`；部署环境仍可通过系统环境变量覆盖对应配置。
 
 ## 部署
 

@@ -1,7 +1,6 @@
-const siteUrl = process.env.NUXT_PUBLIC_SITE_URL
-if (process.env.NODE_ENV === 'production' && (!siteUrl || siteUrl.includes('localhost'))) {
-  throw new Error('[vidoc] 生产构建必须设置 NUXT_PUBLIC_SITE_URL（形如 https://vidoc.example.com）')
-}
+// 站点与 API 地址直接写在这里（构建期烘焙进产物），改完必须重新 build / generate。
+const siteUrl = 'https://vidocnote.com'
+const apiBase = 'https://api.vidocnote.com'
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
@@ -24,15 +23,17 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     public: {
-      apiBase: process.env.NUXT_PUBLIC_API_BASE || '',
-      turnstileSiteKey: process.env.NUXT_PUBLIC_TURNSTILE_SITE_KEY || ''
+      apiBase,
+      // Turnstile site key（公开值）：留空 = 不渲染小部件、后端也不校验
+      turnstileSiteKey: ''
     }
   },
 
   nitro: {
     devProxy: {
       '/api': {
-        target: process.env.NUXT_API_PROXY_TARGET || 'http://localhost:8080/api',
+        // 仅 nuxt dev 生效
+        target: 'http://localhost:8080/api',
         changeOrigin: true
       }
     },
