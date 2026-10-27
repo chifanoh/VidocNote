@@ -80,18 +80,12 @@ vidoc:
     expected-hostname: ${VIDOC_TURNSTILE_EXPECTED_HOSTNAME:}
     expected-action: ${VIDOC_TURNSTILE_EXPECTED_ACTION:}
 
-langchain4j:
-  open-ai:
-    chat-model:
-      # 1. 填你在阿里云百炼申请的 API Key（sk-开头）
-      api-key: sk-你的百炼API密钥
-      # 2. 关键：把接口地址改成百炼的兼容地址
-      base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
-      # 3. 填你要用的模型名，比如 qwen-plus 或 qwen-turbo
-      model-name: qwen-plus
-      # 可选：开启请求和响应日志，方便你调试排错
-      log-requests: true
-      log-responses: true
+# AI Agent 模型配置
+ai:
+  chat:
+    api-key: ${CHAT-API-KEY:}
+    base-url: ${CHAT-BASE-URL:}
+    model-name: ${CHAT-MODEL-NAME:}
 
 logging:
   level:

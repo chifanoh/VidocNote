@@ -1,6 +1,7 @@
 // 站点与 API 地址直接写在这里（构建期烘焙进产物），改完必须重新 build / generate。
+const isDev = process.env.NODE_ENV === 'development'
 const siteUrl = 'https://vidocnote.com'
-const apiBase = 'https://api.vidocnote.com'
+const apiBase = isDev ? '' : 'https://api.vidocnote.com'
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
