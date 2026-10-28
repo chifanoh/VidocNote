@@ -3,6 +3,7 @@ package com.vidoc.exception;
 import cn.dev33.satoken.exception.NotLoginException;
 import cn.dev33.satoken.exception.NotPermissionException;
 import cn.dev33.satoken.exception.NotRoleException;
+import com.vidoc.llm.LlmException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -25,6 +26,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<Map<String, Object>> handleApi(ApiException ex) {
+        return body(ex.getStatus(), ex.getMessage());
+    }
+
+    @ExceptionHandler(LlmException.class)
+    public ResponseEntity<Map<String, Object>> handleLlm(LlmException ex) {
         return body(ex.getStatus(), ex.getMessage());
     }
 

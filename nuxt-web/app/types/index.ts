@@ -23,6 +23,10 @@ export interface Summary {
   createdAt: string
 }
 
+export interface AgentChatResponse {
+  answer: string
+}
+
 /** 历史列表项：列表接口只回卡片要用的字段，不含 summaryText / errorMessage 等大字段 */
 export interface SummaryListItem {
   id: string

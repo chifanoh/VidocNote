@@ -27,15 +27,20 @@ public class SummaryService {
     private final SummaryProcessor processor;
     private final PointsService pointsService;
     private final RejectionLog rejections;
+    private final AgentTranscriptCache agentTranscriptCache;
+    private final AgentVectorStore agentVectorStore;
     private final Executor summaryExecutor;
 
     public SummaryService(VideoSummaryRepository repository, SummaryProcessor processor, PointsService pointsService,
-                          RejectionLog rejections,
+                          RejectionLog rejections, AgentTranscriptCache agentTranscriptCache,
+                          AgentVectorStore agentVectorStore,
                           @Qualifier("summaryExecutor") Executor summaryExecutor) {
         this.repository = repository;
         this.processor = processor;
         this.pointsService = pointsService;
         this.rejections = rejections;
+        this.agentTranscriptCache = agentTranscriptCache;
+        this.agentVectorStore = agentVectorStore;
         this.summaryExecutor = summaryExecutor;
     }
 
@@ -123,5 +128,12 @@ public class SummaryService {
             throw new ApiException(HttpStatus.NOT_FOUND, "摘要记录不存在");
         }
         repository.delete(summary);
+        try {
+            agentTranscriptCache.delete(publicId);
+            agentVectorStore.delete(publicId);
+        } catch (RuntimeException e) {
+            // 摘要删除不能被缓存服务拖垮；残留 key 会由 TTL 自动回收。
+            log.warn("摘要已删除，但问答缓存清理失败：{}，原因={}", publicId, e.getMessage());
+        }
     }
 }
