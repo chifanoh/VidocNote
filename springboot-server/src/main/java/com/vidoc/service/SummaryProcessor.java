@@ -1,6 +1,7 @@
 package com.vidoc.service;
 
 import com.vidoc.config.LlmProperties;
+import com.vidoc.config.AgentRagProperties;
 import com.vidoc.entity.SummaryStatus;
 import com.vidoc.entity.UserPoints;
 import com.vidoc.entity.VideoSummary;
@@ -38,19 +39,25 @@ public class SummaryProcessor {
     private final VideoSourceRegistry videoSourceRegistry;
     private final LlmProvider llmProvider;
     private final LlmProperties llmProperties;
+    private final AgentRagProperties agentRagProperties;
+    private final AgentTranscriptCache agentTranscriptCache;
     private final PointsService pointsService;
     private final RejectionLog rejections;
     /** 单条视频时长上限（秒）。超了直接拒绝：长视频占池子久、成本高，字幕也会被截断 */
     private final long maxDurationSeconds;
 
     public SummaryProcessor(VideoSummaryRepository repository, VideoSourceRegistry videoSourceRegistry,
-                            LlmProvider llmProvider, LlmProperties llmProperties, PointsService pointsService,
-                            RejectionLog rejections,
+                            LlmProvider llmProvider, LlmProperties llmProperties,
+                            AgentRagProperties agentRagProperties,
+                            AgentTranscriptCache agentTranscriptCache,
+                            PointsService pointsService, RejectionLog rejections,
                             @Value("${vidoc.summary.max-duration-seconds:10800}") long maxDurationSeconds) {
         this.repository = repository;
         this.videoSourceRegistry = videoSourceRegistry;
         this.llmProvider = llmProvider;
         this.llmProperties = llmProperties;
+        this.agentRagProperties = agentRagProperties;
+        this.agentTranscriptCache = agentTranscriptCache;
         this.pointsService = pointsService;
         this.rejections = rejections;
         this.maxDurationSeconds = maxDurationSeconds;
@@ -121,22 +128,25 @@ public class SummaryProcessor {
             repository.save(summary);
 
             Optional<VideoSource.Transcript> subtitles =
-                    source.transcript(videoUrl, llmProperties.getMaxInputChars());
+                    source.transcript(videoUrl, agentRagProperties.getMaxTranscriptChars());
             if (subtitles.isEmpty()) {
                 log.warn("摘要任务 {} 无可用字幕，记录已丢弃：{}", summaryId, videoUrl);
                 reject(summary, charged, "该视频没有可用字幕，暂不支持生成摘要");
                 return;
             }
             VideoSource.Transcript transcript = subtitles.get();
+            VideoSource.Transcript summaryTranscript =
+                    VideoSource.Transcript.truncateTo(transcript.text(), llmProperties.getMaxInputChars());
 
             summary.setProgressStep(STEP_SUMMARIZE);
             repository.save(summary);
 
-            LlmProvider.Result result = llmProvider.summarize(transcript.text());
+            LlmProvider.Result result = llmProvider.summarize(summaryTranscript.text());
             summary.setSummaryText(result.text());
-            summary.setTruncated(transcript.truncated() || result.truncated());
+            summary.setTruncated(transcript.truncated() || summaryTranscript.truncated() || result.truncated());
             summary.setStatus(SummaryStatus.COMPLETED);
             summary.setProgressStep(null);
+            cacheTranscript(summary, transcript);
             if (result.truncated()) {
                 // 撞上限的正文是半截，但这批 token 已经付了：入库 + 标记，不退分（丢弃才是白烧）
                 log.warn("摘要任务 {} 输出被 max_tokens 截断（{}），按已生成内容入库", summaryId, modelName());
@@ -168,6 +178,15 @@ public class SummaryProcessor {
     private String modelName() {
         String model = llmProperties.getModel();
         return model == null || model.isBlank() ? "模型未配置" : model;
+    }
+
+    private void cacheTranscript(VideoSummary summary, VideoSource.Transcript transcript) {
+        try {
+            agentTranscriptCache.put(summary.getPublicId(), transcript.text(), transcript.truncated());
+        } catch (RuntimeException e) {
+            // 字幕缓存只是问答加速层；Redis 不可用不能影响已经生成的摘要。
+            log.warn("摘要任务 {} 的字幕缓存写入失败：{}", summary.getId(), e.getMessage());
+        }
     }
 
     /** 上限的中文说法：整小时说小时、整分钟说分钟，否则说秒 —— 上限可配，不能把「3 小时」写死 */

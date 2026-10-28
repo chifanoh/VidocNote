@@ -1,6 +1,7 @@
 package com.vidoc.service;
 
 import com.vidoc.config.LlmProperties;
+import com.vidoc.config.AgentRagProperties;
 import com.vidoc.entity.SummaryStatus;
 import com.vidoc.entity.UserPoints;
 import com.vidoc.entity.VideoSummary;
@@ -38,6 +39,7 @@ class SummaryProcessorTest {
     private VideoSourceRegistry registry;
     private VideoSource source;
     private LlmProvider llmProvider;
+    private AgentTranscriptCache agentTranscriptCache;
     private PointsService pointsService;
     private RejectionLog rejections;
     private SummaryProcessor processor;
@@ -48,6 +50,7 @@ class SummaryProcessorTest {
         registry = mock(VideoSourceRegistry.class);
         source = mock(VideoSource.class);
         llmProvider = mock(LlmProvider.class);
+        agentTranscriptCache = mock(AgentTranscriptCache.class);
         pointsService = mock(PointsService.class);
         rejections = new RejectionLog();
 
@@ -56,7 +59,7 @@ class SummaryProcessorTest {
         when(source.transcript(eq(URL), anyLong())).thenReturn(Optional.of(new VideoSource.Transcript("字幕", false)));
 
         processor = new SummaryProcessor(repository, registry, llmProvider, new LlmProperties(),
-                pointsService, rejections, MAX_DURATION);
+                new AgentRagProperties(), agentTranscriptCache, pointsService, rejections, MAX_DURATION);
     }
 
     private static VideoSource.Metadata metadata(Long duration) {
@@ -210,6 +213,25 @@ class SummaryProcessorTest {
         assertThat(summary.getProgressStep()).isNull();
         assertThat(reasonOf(summary)).isNull();
         verify(pointsService, never()).refund(anyLong(), any(), anyLong());
+        verify(agentTranscriptCache).put(anyString(), eq("字幕"), eq(false));
+    }
+
+    @Test
+    void theFullTranscriptIsCachedWhileOnlyTheSummaryInputIsTruncated() {
+        existing();
+        LlmProperties llmProperties = new LlmProperties();
+        llmProperties.setMaxInputChars(2);
+        processor = new SummaryProcessor(repository, registry, llmProvider, llmProperties,
+                new AgentRagProperties(), agentTranscriptCache, pointsService, rejections, MAX_DURATION);
+        when(source.transcript(eq(URL), anyLong()))
+                .thenReturn(Optional.of(new VideoSource.Transcript("完整字幕内容", false)));
+        when(pointsService.consume(USER, 10, SUMMARY_ID)).thenReturn(new UserPoints.Charge(0, 10));
+        when(llmProvider.summarize(anyString())).thenReturn(new LlmProvider.Result("正文", false));
+
+        processor.process(SUMMARY_ID);
+
+        verify(llmProvider).summarize("完整");
+        verify(agentTranscriptCache).put(anyString(), eq("完整字幕内容"), eq(false));
     }
 
     /** 被 max_tokens 截断不算失败：正文照常入库、标记截断、不退分 */
@@ -252,6 +274,20 @@ class SummaryProcessorTest {
 
         assertThat(reasonOf(summary)).isNull();
         verify(llmProvider).summarize(anyString());
+        verify(repository, never()).delete(any());
+    }
+
+    @Test
+    void aTranscriptCacheFailureDoesNotFailTheSummary() {
+        VideoSummary summary = existing();
+        when(pointsService.consume(USER, 10, SUMMARY_ID)).thenReturn(new UserPoints.Charge(0, 10));
+        when(llmProvider.summarize(anyString())).thenReturn(new LlmProvider.Result("正文", false));
+        org.mockito.Mockito.doThrow(new IllegalStateException("redis down"))
+                .when(agentTranscriptCache).put(anyString(), anyString(), org.mockito.ArgumentMatchers.anyBoolean());
+
+        processor.process(SUMMARY_ID);
+
+        assertThat(summary.getStatus()).isEqualTo(SummaryStatus.COMPLETED);
         verify(repository, never()).delete(any());
     }
 }

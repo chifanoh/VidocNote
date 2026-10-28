@@ -285,5 +285,10 @@ async function onDelete() {
         </nav>
       </div>
     </div>
+    <SummaryAgent
+      v-if="summary"
+      :summary-id="summary.id"
+      :title="summary.title"
+    />
   </div>
 </template>

@@ -35,6 +35,8 @@ class SummaryServiceTest {
     private SummaryProcessor processor;
     private PointsService pointsService;
     private RejectionLog rejections;
+    private AgentTranscriptCache agentTranscriptCache;
+    private AgentVectorStore agentVectorStore;
     private Executor summaryExecutor;
     private SummaryService service;
 
@@ -44,8 +46,11 @@ class SummaryServiceTest {
         processor = mock(SummaryProcessor.class);
         pointsService = mock(PointsService.class);
         rejections = mock(RejectionLog.class);
+        agentTranscriptCache = mock(AgentTranscriptCache.class);
+        agentVectorStore = mock(AgentVectorStore.class);
         summaryExecutor = mock(Executor.class);
-        service = new SummaryService(repository, processor, pointsService, rejections, summaryExecutor);
+        service = new SummaryService(repository, processor, pointsService, rejections,
+                agentTranscriptCache, agentVectorStore, summaryExecutor);
         when(pointsService.balance(USER)).thenReturn(100);
         // save 默认返回 null，后面 created.getId() 会直接 NPE
         when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
@@ -115,5 +120,17 @@ class SummaryServiceTest {
 
         assertThat(response.status()).isEqualTo(SummaryStatus.COMPLETED);
         verify(rejections, never()).reasonOf(any());
+    }
+
+    @Test
+    void deletingASummaryAlsoEvictsItsAgentCache() {
+        VideoSummary found = new VideoSummary(USER, REQUEST.videoUrl());
+        when(repository.findByPublicIdAndUserId(PUBLIC_ID, USER)).thenReturn(Optional.of(found));
+
+        service.deleteOwned(USER, PUBLIC_ID);
+
+        verify(repository).delete(found);
+        verify(agentTranscriptCache).delete(PUBLIC_ID);
+        verify(agentVectorStore).delete(PUBLIC_ID);
     }
 }

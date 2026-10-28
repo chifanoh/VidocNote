@@ -1,6 +1,9 @@
 package com.vidoc;
 
 import com.vidoc.config.AlipayProperties;
+import com.vidoc.config.AgentRagProperties;
+import com.vidoc.config.AiChatProperties;
+import com.vidoc.config.AiEmbeddingProperties;
 import com.vidoc.config.LlmProperties;
 import com.vidoc.config.PointsProperties;
 import com.vidoc.config.TurnstileProperties;
@@ -15,7 +18,8 @@ import org.springframework.scheduling.annotation.EnableAsync;
 @SpringBootApplication
 @EnableAsync
 @EnableConfigurationProperties({YtDlpProperties.class, LlmProperties.class, PointsProperties.class,
-        AlipayProperties.class, TurnstileProperties.class})
+        AlipayProperties.class, TurnstileProperties.class, AiChatProperties.class,
+        AiEmbeddingProperties.class, AgentRagProperties.class})
 public class VidocServerApplication {
 
     public static void main(String[] args) {
